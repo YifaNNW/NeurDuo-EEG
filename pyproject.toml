@@ -1,0 +1,30 @@
+# Package metadata and pinned dependencies of NeurDuo-EEG.
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neurduo-eeg"
+version = "0.1.0"
+description = "NeurDuo-EEG: a long-sequence EEG foundation model with persistent state and explicit memory"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch==2.4.1",
+    "numpy==1.26.4",
+    "scipy==1.15.3",
+    "scikit-learn==1.7.2",
+    "mne==1.12.1",
+    "tqdm==4.70.0",
+    "causal-conv1d==1.4.0",
+    "mamba-ssm==2.2.2",
+    "transformers==4.44.2",
+]
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["eeg_fm", "eeg_fm.*"]
+namespaces = false
