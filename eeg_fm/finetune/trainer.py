@@ -1,4 +1,4 @@
-"""Fine-tuning loop with the common optimizer, schedule, model selection and test evaluation, adapted from CBraMod."""
+"""Fine-tuning loop with the common optimizer, schedule, model selection and test evaluation, adapted from CBraMod (https://github.com/wjq-learning/CBraMod, MIT License)."""
 
 import copy
 import math

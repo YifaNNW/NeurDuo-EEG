@@ -1,4 +1,4 @@
-"""Command-line entry point for fine-tuning a pretrained backbone on one downstream task."""
+"""Command-line entry point for fine-tuning a pretrained backbone on one downstream task, adapted from CBraMod (https://github.com/wjq-learning/CBraMod, MIT License)."""
 
 import argparse
 import json

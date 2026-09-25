@@ -16,7 +16,6 @@ _A Long-Sequence EEG Foundation Model with Persistent State and Explicit Memory_
     | 🚢&nbsp;<a href="#-pretrain">Pretrain</a>
     | ⛵&nbsp;<a href="#-finetune">Finetune</a>
     | 🚀&nbsp;<a href="#-quick-start">Quick Start</a>
-    | 🔗&nbsp;<a href="#-citation">Citation</a>
 </p>
 
 ## 🔍 About
@@ -30,7 +29,7 @@ Persistent State and Explicit Memory**.
 
 ### Abstract
 
-Electroencephalography (EEG) is recorded continuously over hours, with relevant dynamics spanning timescales from milliseconds to hours. Most EEG foundation models nevertheless process fixed windows independently, limiting their ability to capture information encoded in long-timescale dynamics. State-space architectures enable persistent recurrent processing, but long-range information remains implicitly compressed in recurrent states. We present NeurDuo-EEG, a causal EEG foundation model with channel-resolved persistent memory. NeurDuo-EEG introduces multi-timescale memory management with learned consolidation and selective retrieval, enabling persistent modelling of continuous EEG with fixed-size state. It is pre-trained on 3,955 hours of EEG from 17 public datasets using multi-channel autoregressive prediction of discrete spectral codes. Across three short-window and two long-sequence downstream tasks, NeurDuo-EEG achieves the best performance on four of five benchmarks, including all three short-window tasks and seizure detection, where AUC-PR improves from 0.285 to 0.471 over the strongest non-NeurDuo baseline. Notably, NeurDuo-EEG supports efficient streaming inference with near-constant per-chunk latency as the available history extends to 1h. NeurDuo-EEG-Small achieves this with only 4.7M backbone parameters. At the same time, it demonstrates strong competitiveness in sleep staging tasks. These results show that our model effectively leverages long-range context in continuous EEG while achieving superior performance on short-window tasks.
+Electroencephalography (EEG) is recorded continuously over hours, with relevant dynamics spanning timescales from milliseconds to hours. Most EEG foundation models nevertheless process fixed windows independently, limiting their ability to capture information encoded in long-timescale dynamics. State-space architectures enable persistent recurrent processing, but long-range information remains implicitly compressed in recurrent states. We present NeurDuo-EEG, a causal EEG foundation model with channel-resolved persistent memory. NeurDuo-EEG introduces multi-timescale memory management with learned consolidation and selective retrieval, enabling persistent modelling of continuous EEG with fixed-size state. It is pre-trained on 3,955 hours of EEG from 17 public datasets using multi-channel autoregressive prediction of discrete spectral codes. Across three short-window and two long-sequence downstream tasks, NeurDuo-EEG achieves the best performance on four of five benchmarks, including all three short-window tasks and seizure detection, where AUC-PR improves from 0.285 to 0.471 over the strongest non-NeurDuo baseline. NeurDuo-EEG also supports efficient streaming inference with near-constant per-chunk latency as the available history extends to 1h. Notably, the small version achieves this with only 4.7M backbone parameters. At the same time, it demonstrates strong competitiveness in sleep staging tasks. These results show that our model effectively leverages long-range context in continuous EEG while achieving superior performance on short-window tasks.
 
 ## 📦 Model Zoo
 
@@ -168,14 +167,6 @@ logits = head(states.reshape(1, -1, states.shape[2]))
 `states` holds one fused state per channel and chunk (`[6, 20, 448]` here), and
 `logits` is `[1, 4]`.
 
-## 🤝 Acknowledgements
+## ⚖️ License
 
-Parts of the fine-tuning code are adapted from [CBraMod](https://github.com/wjq-learning/CBraMod)
-(MIT License, see [`LICENSE-THIRD-PARTY`](LICENSE-THIRD-PARTY)).
-
-## 🔗 Citation
-
-If you find our paper or code useful, please consider citing our work:
-
-```bibtex
-```
+This project is released under the [MIT License](LICENSE).

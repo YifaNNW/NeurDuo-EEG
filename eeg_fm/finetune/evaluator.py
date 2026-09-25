@@ -1,4 +1,4 @@
-"""Validation and test metrics for classification, regression and sequence labelling, adapted from CBraMod."""
+"""Validation and test metrics for classification, regression and sequence labelling, adapted from CBraMod (https://github.com/wjq-learning/CBraMod, MIT License)."""
 
 import numpy as np
 import torch

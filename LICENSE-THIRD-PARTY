@@ -1,7 +1,7 @@
 NeurDuo-EEG includes code adapted from the following project.
 
 CBraMod (https://github.com/wjq-learning/CBraMod)
-Used in: the fine-tuning code (eeg_fm/finetune/ and scripts/finetune/run_finetune.py)
+Used in: eeg_fm/finetune/evaluator.py, eeg_fm/finetune/trainer.py, scripts/finetune/run_finetune.py
 
 MIT License
 
