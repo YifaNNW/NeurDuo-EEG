@@ -4,7 +4,7 @@
 
 _A Long-Sequence EEG Foundation Model with Persistent State and Explicit Memory_
 
-![Paper](https://img.shields.io/badge/Paper-coming%20soon-lightgrey)
+[![Paper](https://img.shields.io/badge/arXiv-2609.38587-b31b1b)](https://arxiv.org/abs/2609.38587v1)
 ![Weights](https://img.shields.io/badge/Weights-coming%20soon-lightgrey)
 
 </div>
