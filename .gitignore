@@ -49,3 +49,6 @@ dist/
 
 # Symlink to /projects/u6xc/haiping/neurduo/logs (job logs, one subfolder per topic)
 /logs
+
+# Internal docs (paths, checkpoints, rebuttal notes): local only, never pushed
+/docs/
