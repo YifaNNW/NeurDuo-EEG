@@ -186,8 +186,10 @@ class Trainer(object):
             # Validation predictions of the selected model, for choosing thresholds without test data.
             _, _, self.val_predictions = self.val_eval.get_metrics_for_seq2seq(
                 self.model, return_predictions=True)
-        _tshow = [k for k in ('kappa', 'macro_f1', 'accuracy',
-                              'auroc', 'auc_pr', 'fp_per_hour') if k in mt]
+        if hasattr(self.test_eval, 'at_val_thresholds'):
+            mt.update(self.test_eval.at_val_thresholds(self.val_predictions, pred))
+        _tshow = [k for k in ('kappa', 'macro_f1', 'accuracy', 'auroc', 'auc_pr', 'fp_per_hour',
+                              'fp_per_hour_valthr_sens50', 'sensitivity_valthr_sens50') if k in mt]
         print(f"***TEST (best val-{sel} epoch {best_epoch}): "
               + ' '.join(f"{k} {mt[k]:.5f}" for k in _tshow), flush=True)
         if 'per_class_f1' in mt:

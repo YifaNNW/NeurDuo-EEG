@@ -67,10 +67,19 @@ def main():
     for key, name in metrics:
         print(f"  {name:<10} {ms([r[key] for r in rows if key in r])}")
     if seizure:
-        false_alarms = sum(r['test_fp_per_hour_at_sens50'] * r['test_hours'] for r in rows)
-        hours = sum(r['test_hours'] for r in rows)
-        print(f"  {'FP/h':<10} {false_alarms / hours:.2f}  (pooled over folds, "
-              f"{false_alarms:.0f} false alarms in {hours:.1f} h)")
+        for key, how in (('test_fp_per_hour_valthr_sens50', 'threshold from validation'),
+                         ('test_fp_per_hour_at_sens50', 'threshold from test, as in the paper')):
+            have = [r for r in rows if key in r]
+            if not have:
+                continue
+            false_alarms = sum(r[key] * r['test_hours'] for r in have)
+            hours = sum(r['test_hours'] for r in have)
+            print(f"  {'FP/h':<10} {false_alarms / hours:.2f}  ({how}; pooled over {len(have)} "
+                  f"folds, {false_alarms:.0f} false alarms in {hours:.1f} h)")
+        sens = [r['test_sensitivity_valthr_sens50'] for r in rows
+                if 'test_sensitivity_valthr_sens50' in r]
+        if sens:
+            print(f"  {'Sens':<10} {ms(sens)}  (test unit sensitivity at the validation threshold)")
 
 
 if __name__ == '__main__':
