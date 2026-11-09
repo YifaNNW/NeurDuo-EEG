@@ -38,3 +38,6 @@ dist/
 /data/
 /datasets/
 /manifests/
+
+# Reviewer comments, keep local only
+/docs/review.pdf
