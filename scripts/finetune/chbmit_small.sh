@@ -1,8 +1,10 @@
 #!/bin/bash -l
 # Fine-tune NeurDuo-Small on CHB-MIT (15 channels, 20 x 30 s = 10 min context, whole-sequence
 # normalisation, state carried across units), 5 folds x 1 seed, with the paper protocol of
-# harness_accumfix/submit_table3_5.sh (seed 42, grad_accum 4; paper AUC-PR 0.413 +- 0.174 over folds),
-# plus the selected model and validation
+# harness_accumfix/submit_table3_5.sh (seed 42; paper AUC-PR 0.413 +- 0.174 over folds). The paper split
+# each step into 4 accumulated micro-batches for memory; here one GPU takes the same 8 sequences
+# (160 units) per step at once (~11 GB), so the effective batch is unchanged.
+# Also saves the selected model and the validation
 # predictions, which the rebuttal perturbation test and validation-chosen thresholds need.
 #
 # Usage: sbatch scripts/finetune/chbmit_small.sh
@@ -34,6 +36,6 @@ nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 
 cd "$REPO"
 python scripts/finetune/run_finetune.py --dataset chbmit --data_dir "$DATA" \
-    --checkpoint "$CKPT" --output_dir "$OUT" --fold "$FOLD" --seed 42 --grad_accum 4 \
+    --checkpoint "$CKPT" --output_dir "$OUT" --fold "$FOLD" --seed 42 \
     --resume --model_dir "$MODEL_DIR" ${EXTRA:-}
 echo "done $(date '+%F %T')"
