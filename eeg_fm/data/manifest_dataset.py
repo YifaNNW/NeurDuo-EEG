@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import torch
 
-from eeg_fm.data.normalize import normalize_window
+from eeg_fm.data.normalize import NORMALIZE_MODES, normalize
 from torch.utils.data import Dataset
 
 
@@ -38,15 +38,21 @@ class ContinuousEEGWindowDataset(Dataset[dict[str, Any]]):
         chunk_stride_samples: int,
         sequence_length_steps: int,
         sequence_stride_steps: int,
-        normalize_per_window: bool = True,
+        normalize: str = "sequence",
+        norm_window_steps: int = 8,
     ) -> None:
         super().__init__()
+        if normalize not in NORMALIZE_MODES:
+            raise ValueError(f"normalize must be one of {NORMALIZE_MODES}, got {normalize!r}")
+        if int(norm_window_steps) < 1:
+            raise ValueError(f"norm_window_steps must be >= 1, got {norm_window_steps}")
         self.manifest_path = Path(manifest_path)
         self.chunk_samples = chunk_samples
         self.chunk_stride_samples = chunk_stride_samples
         self.sequence_length_steps = sequence_length_steps
         self.sequence_stride_steps = sequence_stride_steps
-        self.normalize_per_window = normalize_per_window
+        self.normalize = normalize
+        self.norm_window_steps = int(norm_window_steps)
         self.window_num_samples = chunk_samples + (sequence_length_steps - 1) * chunk_stride_samples
         self.window_stride_samples = sequence_stride_steps * chunk_stride_samples
         self._mmap_cache: dict[str, np.ndarray] = {}
@@ -135,9 +141,7 @@ class ContinuousEEGWindowDataset(Dataset[dict[str, Any]]):
         chunk_tensor = torch.from_numpy(
             np.ascontiguousarray(chunk_array, dtype=np.float32)
         )
-        if self.normalize_per_window:
-            chunk_tensor = normalize_window(chunk_tensor)
-        return chunk_tensor
+        return normalize(chunk_tensor, self.normalize, self.norm_window_steps)
 
     def _build_metadata_dict(self, record: ManifestRecording, num_channels: int) -> dict[str, torch.Tensor]:
         missing_mask = record.missing_mask if record.missing_mask is not None else [0.0] * num_channels

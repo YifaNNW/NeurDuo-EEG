@@ -10,6 +10,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from eeg_fm.data import ContinuousEEGWindowDataset, collate_pretrain_batch
+from eeg_fm.data.normalize import NORMALIZE_MODES
 from eeg_fm.data.channel_bucket_sampler import ChannelBucketedDistributedBatchSampler
 from eeg_fm.modules.vq_tokenizer import SpectralVQTokenizer
 from eeg_fm.tokenizer_config import TokenizerConfig
@@ -35,6 +36,10 @@ def build_config(args: argparse.Namespace) -> TokenizerConfig:
         config.num_workers = args.num_workers
     if args.device:
         config.device = args.device
+    if args.normalize:
+        config.normalize = args.normalize
+    if args.norm_window_steps:
+        config.norm_window_steps = args.norm_window_steps
     return config
 
 
@@ -49,6 +54,10 @@ def main() -> None:
     parser.add_argument("--resume_from", type=str, default=None)
     parser.add_argument("--num_workers", type=int, default=None)
     parser.add_argument("--device", type=str, default=None)
+    parser.add_argument("--normalize", choices=NORMALIZE_MODES, default=None,
+                        help="amplitude normalization: whole sequence, independent windows, or none")
+    parser.add_argument("--norm_window_steps", type=int, default=None,
+                        help="chunks per window when --normalize window")
     args = parser.parse_args()
 
     distributed, rank, world_size, local_rank = setup_distributed()
@@ -70,6 +79,10 @@ def main() -> None:
             print(f"  effective batch:{config.batch_size * world_size}")
         print(f"  codebook:       {config.codebook_size} x {config.code_dim}")
         print(f"  chunk_samples:  {config.chunk_samples} (n_freq={config.n_freq_bins})")
+        norm = config.normalize
+        if norm == "window":
+            norm += f" ({config.norm_window_steps} chunks per window)"
+        print(f"  normalize:      {norm}")
         print(f"  learning_rate:  {config.learning_rate}")
         print("=" * 60, flush=True)
 
@@ -80,7 +93,8 @@ def main() -> None:
             chunk_stride_samples=config.chunk_stride_samples,
             sequence_length_steps=config.sequence_length_steps,
             sequence_stride_steps=config.sequence_stride_steps,
-            normalize_per_window=config.normalize_per_window,
+            normalize=config.normalize,
+            norm_window_steps=config.norm_window_steps,
         )
 
     dataset = build_dataset(config.manifest_path)

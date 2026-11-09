@@ -134,12 +134,12 @@ identifies channels by electrode position. `seg_sec` must be a multiple of 0.5 s
 ## 🚀 Quick Start
 
 Use the pretrained backbone with your own head. The input is EEG at 256 Hz, cut into
-0.5 s chunks and normalized per window:
+0.5 s chunks and normalized over the whole sequence:
 
 ```python
 import torch
 from eeg_fm import EEGFM, EEGMetadataBatch
-from eeg_fm.data import normalize_window
+from eeg_fm.data import normalize_sequence
 from eeg_fm.electrodes import coord_of, strip_reference
 from eeg_fm.finetune.heads import STHead
 from eeg_fm.finetune.net_eegfm import load_model_config
@@ -152,7 +152,7 @@ model.to(device).eval()
 
 channels = ["Fp1", "Fp2", "C3", "C4", "O1", "O2"]
 eeg = torch.randn(len(channels), 10 * 256)
-chunks = normalize_window(eeg.unfold(-1, 128, 128).transpose(0, 1)).unsqueeze(0).to(device)
+chunks = normalize_sequence(eeg.unfold(-1, 128, 128).transpose(0, 1)).unsqueeze(0).to(device)
 metadata = EEGMetadataBatch(
     channel_positions=torch.tensor([[coord_of(strip_reference(c)[0]) for c in channels]], device=device),
     reference_ids=torch.zeros(1, len(channels), dtype=torch.long, device=device),

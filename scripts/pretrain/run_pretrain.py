@@ -12,6 +12,7 @@ import torch.distributed as dist
 from torch.utils.data import DataLoader
 
 from eeg_fm.data import ContinuousEEGWindowDataset, collate_pretrain_batch
+from eeg_fm.data.normalize import NORMALIZE_MODES
 from eeg_fm.data.channel_bucket_sampler import ChannelBucketedDistributedBatchSampler
 from eeg_fm.pretrain_config import PretrainConfig
 from eeg_fm.pretraining import EEGFMPretrainer
@@ -46,6 +47,10 @@ def build_config(args: argparse.Namespace) -> PretrainConfig:
         config.num_workers = args.num_workers
     if args.device:
         config.device = args.device
+    if args.normalize:
+        config.normalize = args.normalize
+    if args.norm_window_steps:
+        config.norm_window_steps = args.norm_window_steps
 
     return config
 
@@ -86,6 +91,10 @@ def main() -> None:
     parser.add_argument("--resume_from", type=str, default=None)
     parser.add_argument("--num_workers", type=int, default=None)
     parser.add_argument("--device", type=str, default=None)
+    parser.add_argument("--normalize", choices=NORMALIZE_MODES, default=None,
+                        help="amplitude normalization: whole sequence, independent windows, or none")
+    parser.add_argument("--norm_window_steps", type=int, default=None,
+                        help="chunks per window when --normalize window")
     args = parser.parse_args()
 
     distributed, rank, world_size, local_rank = setup_distributed()
@@ -112,6 +121,10 @@ def main() -> None:
         print(f"  device:         {config.device}")
         print(f"  amp:            {config.amp} dtype={config.amp_dtype}")
         print(f"  seq_len_steps:  {config.sequence_length_steps}")
+        norm = config.normalize
+        if norm == "window":
+            norm += f" ({config.norm_window_steps} chunks per window)"
+        print(f"  normalize:      {norm}")
         print(f"  chunk_samples:  {config.model.chunk_samples}")
         print(f"  token_dim:      {config.model.token_dim}")
         print(f"  fast_dim:       {config.model.fast_dim}")
@@ -125,7 +138,8 @@ def main() -> None:
             chunk_stride_samples=config.model.chunk_stride_samples,
             sequence_length_steps=config.sequence_length_steps,
             sequence_stride_steps=config.sequence_stride_steps,
-            normalize_per_window=config.normalize_per_window,
+            normalize=config.normalize,
+            norm_window_steps=config.norm_window_steps,
         )
 
     dataset = build_dataset(config.manifest_path)

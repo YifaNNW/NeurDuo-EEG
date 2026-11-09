@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from eeg_fm.config import EEGFMConfig
+from eeg_fm.data.normalize import NORMALIZE_MODES
 
 
 @dataclass
@@ -16,7 +17,8 @@ class PretrainConfig:
     sequence_stride_steps: int = 128
     batch_size: int = 4
     num_workers: int = 0
-    normalize_per_window: bool = True
+    normalize: str = "sequence"          # "sequence" | "window" | "none"; see eeg_fm/data/normalize.py
+    norm_window_steps: int = 8           # chunks per window in "window" mode (8 = 4 s)
     shuffle: bool = True
 
     max_epochs: int = 10
@@ -41,6 +43,10 @@ class PretrainConfig:
     tokenizer_ckpt: str = ""
 
     model: EEGFMConfig = field(default_factory=EEGFMConfig)
+
+    def __post_init__(self) -> None:
+        if self.normalize not in NORMALIZE_MODES:
+            raise ValueError(f"normalize must be one of {NORMALIZE_MODES}, got {self.normalize!r}")
 
     @classmethod
     def from_json(cls, path: str | Path) -> "PretrainConfig":

@@ -8,7 +8,7 @@
   "sequence_stride_steps": 32,
   "batch_size": 4,
   "num_workers": 7,
-  "normalize_per_window": true,
+  "normalize": "sequence",
   "shuffle": true,
   "max_epochs": 16,
   "learning_rate": 0.00019,

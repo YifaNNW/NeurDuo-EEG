@@ -4,6 +4,8 @@ from dataclasses import dataclass
 import json
 from pathlib import Path
 
+from eeg_fm.data.normalize import NORMALIZE_MODES
+
 
 @dataclass
 class TokenizerConfig:
@@ -14,7 +16,8 @@ class TokenizerConfig:
     sequence_stride_steps: int = 128
     chunk_samples: int = 128
     chunk_stride_samples: int = 32
-    normalize_per_window: bool = True
+    normalize: str = "sequence"          # "sequence" | "window" | "none"; see eeg_fm/data/normalize.py
+    norm_window_steps: int = 8           # chunks per window in "window" mode (8 = 4 s)
 
     batch_size: int = 16
     num_workers: int = 4
@@ -48,6 +51,10 @@ class TokenizerConfig:
 
     amp_weight: float = 1.0
     phase_weight: float = 1.0
+
+    def __post_init__(self) -> None:
+        if self.normalize not in NORMALIZE_MODES:
+            raise ValueError(f"normalize must be one of {NORMALIZE_MODES}, got {self.normalize!r}")
 
     @property
     def n_freq_bins(self) -> int:

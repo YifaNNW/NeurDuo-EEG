@@ -7,7 +7,7 @@
   "sequence_stride_steps": 64,
   "chunk_samples": 128,
   "chunk_stride_samples": 128,
-  "normalize_per_window": true,
+  "normalize": "sequence",
   "batch_size": 16,
   "num_workers": 8,
   "max_epochs": 2,

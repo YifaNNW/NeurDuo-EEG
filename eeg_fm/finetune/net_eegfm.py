@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 
 from eeg_fm.config import EEGFMConfig
+from eeg_fm.data.normalize import normalize_sequence
 from eeg_fm.electrodes import coord_of, strip_reference
 from eeg_fm.finetune.heads import STHead
 from eeg_fm.model import EEGFM
@@ -24,18 +25,6 @@ def load_model_config(checkpoint="", pretrain_config=""):
     if pretrain_config:
         return PretrainConfig.from_json(pretrain_config).model
     raise ValueError("A pretrained checkpoint or a pretraining config is required to build the model.")
-
-
-def _normalize_window(chunks):
-    centered = chunks - chunks.mean(dim=(1, 3), keepdim=True)
-    std = centered.std(dim=(1, 3))
-    positive = std > 0
-    n = positive.sum(dim=1)
-    ordered, _ = torch.sort(torch.where(positive, std, torch.inf), dim=1)
-    idx = torch.div(n - 1, 2, rounding_mode='floor').clamp_min(0)
-    scale = ordered.gather(1, idx.unsqueeze(1)).squeeze(1).clamp_min(1e-12)
-    scale = torch.where(n > 0, scale, torch.ones_like(scale))
-    return centered / scale.view(-1, 1, 1, 1)
 
 
 def _coords(channel_names):
@@ -115,7 +104,7 @@ class Model(nn.Module):
         assert c == self.C and t == self.n_samples, \
             f"expects (B,{self.C},{self.n_samples}) @{NATIVE_FS}Hz, got {tuple(x.shape)}"
         chunks = x.unfold(-1, self.chunk, self.stride).permute(0, 2, 1, 3).contiguous()
-        chunks = _normalize_window(chunks)
+        chunks = normalize_sequence(chunks)
         fused = self.backbone(chunks, self._metadata(b, x.device))
         return self._grid(fused, b)
 
@@ -130,9 +119,9 @@ class Model(nn.Module):
         chunks = flat.unfold(-1, self.chunk, self.stride).permute(0, 2, 1, 3).contiguous()
         if self.cont_normalize == 'sequence':
             chunks = chunks.view(b, l * self.n_steps, c, self.chunk)
-            chunks = _normalize_window(chunks)
+            chunks = normalize_sequence(chunks)
         elif self.cont_normalize == 'window':
-            chunks = _normalize_window(chunks)
+            chunks = normalize_sequence(chunks)
             chunks = chunks.view(b, l * self.n_steps, c, self.chunk)
         else:
             raise ValueError(f"unknown cont_normalize {self.cont_normalize!r}")
