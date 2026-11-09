@@ -41,3 +41,6 @@ dist/
 
 # Reviewer comments, keep local only
 /docs/review.pdf
+
+# Symlink to /projects/u6xc/neurduo/ckpt (checkpoints live outside the repo)
+/ckpt
