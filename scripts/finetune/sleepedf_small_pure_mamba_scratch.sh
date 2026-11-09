@@ -2,13 +2,15 @@
 # Rebuttal (ReVg Q3): plain causal per-channel Mamba trained from scratch on Sleep-EDF.
 # Architecture: configs/pretrain/small_pure_mamba.json (fast Mamba stack only: no channel attention,
 # slow stream or memory; backbone 2.90M, readout 256), random initialisation, no pretrained weights.
-# Protocol of the paper's Sleep-EDF NeurDuo row (Tables 3 and 6, carried state;
-# harness_v20/submit_sleepedf_seqnorm.sh, job sl_sq_small_c): Fpz and Pz, 20 x 30 s units, state carried
-# across units, Mamba context head, whole-sequence normalisation, 5 subject folds x seed 42,
-# 20 epochs, warm-up 3, model chosen by validation kappa, 8 sequences (160 units) per step on one GPU,
-# no gradient accumulation (the paper used none on Sleep-EDF either).
-# --cont_normalize sequence is passed explicitly: the dataset spec's default for sleepedf is 'window',
-# but the paper's Sleep-EDF rows were moved to whole-sequence normalisation on 2026-09-01.
+# Protocol of the paper's Sleep-EDF NeurDuo row (Tables 3 and 6, carried state; harness_v20 tag
+# _ctx20cont_mamba): Fpz and Pz, 20 x 30 s units, state carried across units, Mamba context head,
+# per-unit normalisation (the dataset spec's default 'window'), 5 subject folds x seed 42, 20 epochs,
+# warm-up 3, model chosen by validation kappa, 8 sequences (160 units) per step on one GPU, no gradient
+# accumulation (the paper used none on Sleep-EDF either).
+# Normalisation: the paper's Sleep-EDF macro-F1 0.7553 +- 0.0081 is already in the notes on 2026-08-21
+# (notes/eeg_fm_status_2026-07-13.md:7681), before harness_v20/submit_sleepedf_seqnorm.sh (2026-09-01)
+# proposed whole-sequence normalisation, and the paper still reports that number on 2026-09-14. So the
+# paper's Sleep-EDF rows use per-unit normalisation; only CHB-MIT uses whole-sequence normalisation.
 #
 # Usage: sbatch scripts/finetune/sleepedf_small_pure_mamba_scratch.sh
 #   run dir: /projects/u6xc/haiping/neurduo/runs/finetune/small_pure_mamba_scratch/sleepedf/
@@ -39,7 +41,6 @@ nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 cd "$REPO"
 python scripts/finetune/run_finetune.py --dataset sleepedf --data_dir "$DATA" \
     --no_pretrained --model_config configs/pretrain/small_pure_mamba.json \
-    --cont_normalize sequence \
     --output_dir "$OUT" --fold "$FOLD" --seed 42 \
     --resume --model_dir "$OUT/sleepedf/models" ${EXTRA:-}
 echo "done $(date '+%F %T')"
