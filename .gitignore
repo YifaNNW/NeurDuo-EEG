@@ -43,5 +43,6 @@ dist/
 /docs/review.pdf
 /docs/paper.pdf
 
-# Symlink to /projects/u6xc/neurduo/ckpt (checkpoints live outside the repo)
+# Symlinks to /projects/u6xc/neurduo/{ckpt,finetune_data} (live outside the repo)
 /ckpt
+/finetune_data
