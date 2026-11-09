@@ -47,5 +47,5 @@ dist/
 /ckpt
 /finetune_data
 
-# Symlink to /projects/u6xc/haiping/logs (job logs, one subfolder per topic)
+# Symlink to /projects/u6xc/haiping/neurduo/logs (job logs, one subfolder per topic)
 /logs
