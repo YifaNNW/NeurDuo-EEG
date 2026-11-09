@@ -28,6 +28,11 @@ class EEGFMConfig:
     channel_attn_every: int = 2
     channel_attn_heads: int = 4
 
+    # Pure Mamba: keep only the per-channel fast Mamba stack. No slow stream, memory writer or
+    # memory retrieval are built, and the backbone output is the fast state alone. With
+    # channel_attn_every = 0 the channel streams never interact inside the backbone.
+    fast_only: bool = False
+
     queue_size: int = 16
     writer_window: int = 8
     memory_bank_size: int = 8
@@ -41,6 +46,8 @@ class EEGFMConfig:
 
     @property
     def readout_dim(self) -> int:
+        if self.fast_only:
+            return self.fast_dim
         return self.fast_dim + self.slow_dim
 
     def __post_init__(self) -> None:

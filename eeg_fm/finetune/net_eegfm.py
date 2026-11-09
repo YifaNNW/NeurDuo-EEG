@@ -21,7 +21,14 @@ def load_model_config(checkpoint="", pretrain_config=""):
     if checkpoint:
         payload = torch.load(checkpoint, map_location='cpu', weights_only=False)
         known = {f.name for f in dataclasses.fields(EEGFMConfig)}
-        return EEGFMConfig(**{k: v for k, v in payload['config']['model'].items() if k in known})
+        model_cfg = {k: v for k, v in payload['config']['model'].items() if k in known}
+        # The paper's pure Mamba checkpoint (ckpt/ablation/small_pure_mamba.pt) was trained with a
+        # runtime patch that removed the slow stream and memory, so its stored config does not say
+        # so. Recognise it by the missing slow-stream weights.
+        state_dict = payload.get('student', payload)
+        if not any(k.startswith('slow_backbone.') for k in state_dict):
+            model_cfg['fast_only'] = True
+        return EEGFMConfig(**model_cfg)
     if pretrain_config:
         return PretrainConfig.from_json(pretrain_config).model
     raise ValueError("A pretrained checkpoint or a pretraining config is required to build the model.")

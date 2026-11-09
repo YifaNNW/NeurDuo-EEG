@@ -25,9 +25,10 @@ class EEGFM(nn.Module):
         self.metadata_encoder = MetadataEncoder(config)
         self.spatial_mixer = LightweightSpatialMixer(config)
         self.fast_backbone = FastCausalMamba(config)
-        self.memory_writer = MemoryWriter(config)
-        self.slow_backbone = SlowCausalSSM(config)
-        self.memory_context = MemoryContext(config)
+        if not config.fast_only:
+            self.memory_writer = MemoryWriter(config)
+            self.slow_backbone = SlowCausalSSM(config)
+            self.memory_context = MemoryContext(config)
         self.readout = SplicedReadout(config)
         self.future_latent_predictor = FutureTokenPredictor(config)
 
@@ -198,6 +199,8 @@ class EEGFM(nn.Module):
         _, num_steps, _, _ = chunks.shape
         device = chunks.device
         fast_states = self._encode_fast_sequence(chunks, metadata)
+        if self.config.fast_only:
+            return fast_states
         memory_tokens = self._write_memory(fast_states)
         slot_index = self._memory_slot_index(num_steps, device)
         slow_states = self._scan_slow_sequence(fast_states, memory_tokens, slot_index)
