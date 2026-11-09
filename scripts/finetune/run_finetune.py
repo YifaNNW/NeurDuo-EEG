@@ -1,6 +1,7 @@
 """Command-line entry point for fine-tuning a pretrained backbone on one downstream task, adapted from CBraMod (https://github.com/wjq-learning/CBraMod, MIT License)."""
 
 import argparse
+import dataclasses
 import json
 import os
 import random
@@ -56,6 +57,9 @@ def main():
     ap.add_argument('--resume', action='store_true')
     ap.add_argument('--keep_ckpt', action='store_true',
                     help='keep the resume checkpoint after a successful run')
+    ap.add_argument('--model_dir', default=None,
+                    help='if given, save the selected fine-tuned model (backbone, readout and '
+                         'head) to <model_dir>/<fold|seed>.pt')
     args = ap.parse_args()
 
     setup_seed(args.seed)
@@ -149,17 +153,27 @@ def main():
         json.dump(res, f, indent=2)
 
     if seq:
-        meta = loaders['test'].dataset.meta
         pred_dir = os.path.join(res_dir, 'predictions')
         os.makedirs(pred_dir, exist_ok=True)
-        np.savez_compressed(
-            f'{pred_dir}/{stem}.npz',
-            subject=np.concatenate([[m['subject']] * m['n_valid'] for m in meta]),
-            recording=np.concatenate([[m['recording']] * m['n_valid'] for m in meta]),
-            window=np.concatenate([[m['window']] * m['n_valid'] for m in meta]),
-            epoch_idx=np.concatenate([m['epoch_idx'] for m in meta]),
-            **{k: v for k, v in trainer.test_predictions.items() if v is not None})
-        print('saved predictions:', f'{pred_dir}/{stem}.npz', flush=True)
+        for split, suffix, pred in (('test', '', trainer.test_predictions),
+                                    ('val', '_val', trainer.val_predictions)):
+            meta = loaders[split].dataset.meta
+            np.savez_compressed(
+                f'{pred_dir}/{stem}{suffix}.npz',
+                subject=np.concatenate([[m['subject']] * m['n_valid'] for m in meta]),
+                recording=np.concatenate([[m['recording']] * m['n_valid'] for m in meta]),
+                window=np.concatenate([[m['window']] * m['n_valid'] for m in meta]),
+                epoch_idx=np.concatenate([m['epoch_idx'] for m in meta]),
+                **{k: v for k, v in pred.items() if v is not None})
+            print(f'saved {split} predictions:', f'{pred_dir}/{stem}{suffix}.npz', flush=True)
+    if args.model_dir:
+        os.makedirs(args.model_dir, exist_ok=True)
+        model_path = os.path.join(args.model_dir, f'{stem}.pt')
+        torch.save(dict(model=model.state_dict(),
+                        model_config=dataclasses.asdict(model_config),
+                        args=vars(args)),
+                   model_path)
+        print('saved fine-tuned model:', model_path, flush=True)
     print('saved result:', {k: v for k, v in res.items() if k != 'confusion_matrix'},
           flush=True)
     if not args.keep_ckpt and params.ckpt_path and os.path.exists(params.ckpt_path):

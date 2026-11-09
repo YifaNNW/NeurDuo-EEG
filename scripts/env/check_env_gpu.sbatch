@@ -1,12 +1,12 @@
 #!/bin/bash -l
 # Smoke-test the neurduo conda env on a GPU node: CUDA, mamba-ssm kernels,
 # causal-conv1d, and a forward/backward pass through the NeurDuo backbone.
-# Usage: sbatch scripts/env/check_env_gpu.sbatch   (log goes to /projects/u6xc/haiping/logs/)
+# Usage: sbatch scripts/env/check_env_gpu.sbatch   (log goes to logs/env/, i.e. /projects/u6xc/haiping/logs/env/)
 #SBATCH --job-name=check-env
 #SBATCH --time=00:15:00
 #SBATCH --nodes=1
 #SBATCH --gpus=1
-#SBATCH --output=/projects/u6xc/haiping/logs/%x-%j.log
+#SBATCH --output=/projects/u6xc/haiping/logs/env/%x-%j.log
 set -eo pipefail
 
 ENV=${ENV:-/projects/u6xc/haiping/miniforge3/envs/neurduo}

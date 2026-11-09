@@ -183,6 +183,9 @@ class Trainer(object):
         with torch.no_grad():
             mt, cm, pred = self.test_eval.get_metrics_for_seq2seq(
                 self.model, return_predictions=True)
+            # Validation predictions of the selected model, for choosing thresholds without test data.
+            _, _, self.val_predictions = self.val_eval.get_metrics_for_seq2seq(
+                self.model, return_predictions=True)
         _tshow = [k for k in ('kappa', 'macro_f1', 'accuracy',
                               'auroc', 'auc_pr', 'fp_per_hour') if k in mt]
         print(f"***TEST (best val-{sel} epoch {best_epoch}): "

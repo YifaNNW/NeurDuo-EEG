@@ -46,3 +46,6 @@ dist/
 # Symlinks to /projects/u6xc/neurduo/{ckpt,finetune_data} (live outside the repo)
 /ckpt
 /finetune_data
+
+# Symlink to /projects/u6xc/haiping/logs (job logs, one subfolder per topic)
+/logs
