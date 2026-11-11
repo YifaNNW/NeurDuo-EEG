@@ -17,7 +17,6 @@ slow stream outputs and of the target embedding just before 9:30.
 """
 
 import argparse
-import dataclasses
 import json
 import os
 import sys
@@ -45,8 +44,7 @@ RUN = '/projects/u6xc/haiping/neurduo/runs/finetune/small/chbmit'
 def load_model(path, ds, device):
     payload = torch.load(path, map_location='cpu', weights_only=False)
     a = payload['args']
-    known = {f.name for f in dataclasses.fields(EEGFMConfig)}
-    cfg = EEGFMConfig(**{k: v for k, v in payload['model_config'].items() if k in known})
+    cfg = EEGFMConfig.from_dict(payload['model_config'])
     params = SimpleNamespace(
         channels=ds['channels'], seg_sec=ds['seg_sec'], model_config=cfg,
         cont_normalize=a.get('cont_normalize') or ds.get('cont_normalize', 'window'),
@@ -72,13 +70,14 @@ def run(model, chunks):
     B, S, C, _ = chunks.shape
     md = base._metadata(B, chunks.device)
     fast = bb._encode_fast_sequence(chunks, md)
-    if bb.config.fast_only:
+    if not (bb.config.use_slow_stream or bb.config.use_memory_context):
         fused, slow_scan, slow_all = fast, None, None
     else:
         mem = bb._write_memory(fast)
         slot = bb._memory_slot_index(S, chunks.device)
         slow_scan = bb._scan_slow_sequence(fast, mem, slot)
-        slow_all = bb._add_memory_context(fast, slow_scan, mem, slot)
+        slow_all = (bb._add_memory_context(fast, slow_scan, mem, slot)
+                    if bb.config.use_memory_context else slow_scan)
         fused = bb.readout(fast, slow_all)
     l, d = S // base.n_steps, fused.size(2)
     tokens = (fused.view(B, C, l, base.n_steps, d).permute(0, 2, 1, 3, 4)

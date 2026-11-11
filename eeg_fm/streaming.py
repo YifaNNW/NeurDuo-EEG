@@ -14,8 +14,8 @@ class StreamRunner:
                  device=None, dtype=torch.float32):
         self.m, self.md, self.C, self.B = model, metadata, num_channels, batch
         self.cfg = model.config
-        if getattr(self.cfg, "fast_only", False):
-            raise NotImplementedError("StreamRunner does not support fast_only (pure Mamba) models.")
+        if not (self.cfg.use_slow_stream and self.cfg.use_memory_context):
+            raise NotImplementedError("StreamRunner needs both the slow stream and memory retrieval.")
         self.dev = device or next(model.parameters()).device
         self.dtype = dtype
         self.short_queue = ShortQueue(self.cfg)

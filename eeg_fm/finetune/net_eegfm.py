@@ -1,6 +1,5 @@
 """Pretrained backbone with input chunking, window normalization, channel metadata and the shared readout head."""
 
-import dataclasses
 
 import torch
 import torch.nn as nn
@@ -20,15 +19,13 @@ REFERENCE_ID = 0
 def load_model_config(checkpoint="", pretrain_config=""):
     if checkpoint:
         payload = torch.load(checkpoint, map_location='cpu', weights_only=False)
-        known = {f.name for f in dataclasses.fields(EEGFMConfig)}
-        model_cfg = {k: v for k, v in payload['config']['model'].items() if k in known}
-        # The paper's pure Mamba checkpoint (ckpt/ablation/small_pure_mamba.pt) was trained with a
-        # runtime patch that removed the slow stream and memory, so its stored config does not say
-        # so. Recognise it by the missing slow-stream weights.
+        cfg = EEGFMConfig.from_dict(payload['config']['model'])
+        # Some paper-stage ablations removed modules with a runtime patch, so the stored config
+        # does not say which ones are present. The weights do.
         state_dict = payload.get('student', payload)
-        if not any(k.startswith('slow_backbone.') for k in state_dict):
-            model_cfg['fast_only'] = True
-        return EEGFMConfig(**model_cfg)
+        cfg.use_slow_stream = any(k.startswith('slow_backbone.') for k in state_dict)
+        cfg.use_memory_context = any(k.startswith('memory_context.') for k in state_dict)
+        return cfg
     if pretrain_config:
         return PretrainConfig.from_json(pretrain_config).model
     raise ValueError("A pretrained checkpoint or a pretraining config is required to build the model.")

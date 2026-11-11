@@ -1,6 +1,6 @@
 """Architecture hyperparameters of the NeurDuo-EEG backbone."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 
 
 @dataclass
@@ -28,10 +28,9 @@ class EEGFMConfig:
     channel_attn_every: int = 2
     channel_attn_heads: int = 4
 
-    # Pure Mamba: keep only the per-channel fast Mamba stack. No slow stream, memory writer or
-    # memory retrieval are built, and the backbone output is the fast state alone. With
-    # channel_attn_every = 0 the channel streams never interact inside the backbone.
-    fast_only: bool = False
+    # Modules added to the per-channel fast Mamba stack (channel attention: channel_attn_every > 0).
+    use_slow_stream: bool = True
+    use_memory_context: bool = True
 
     queue_size: int = 16
     writer_window: int = 8
@@ -46,9 +45,9 @@ class EEGFMConfig:
 
     @property
     def readout_dim(self) -> int:
-        if self.fast_only:
-            return self.fast_dim
-        return self.fast_dim + self.slow_dim
+        if self.use_slow_stream or self.use_memory_context:
+            return self.fast_dim + self.slow_dim
+        return self.fast_dim
 
     def __post_init__(self) -> None:
         self.patch_kernel_sizes = tuple(self.patch_kernel_sizes)
@@ -58,3 +57,12 @@ class EEGFMConfig:
             raise ValueError("expand factors must both be at least 1.")
         if self.fast_conv_kernel_size < 1 or self.slow_conv_kernel_size < 1:
             raise ValueError("conv kernel sizes must both be at least 1.")
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "EEGFMConfig":
+        """Build from a config stored in a checkpoint; keys this version does not have are dropped."""
+        known = {f.name for f in fields(cls)}
+        kwargs = {key: value for key, value in data.items() if key in known}
+        if data.get("fast_only"):
+            kwargs.update(use_slow_stream=False, use_memory_context=False)
+        return cls(**kwargs)

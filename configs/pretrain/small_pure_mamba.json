@@ -59,6 +59,7 @@
     "predictor_hidden_dim": 256,
     "use_gradient_checkpointing": true,
     "frontend_max_rows": 8192,
-    "fast_only": true
+    "use_slow_stream": false,
+    "use_memory_context": false
   }
 }

@@ -25,10 +25,14 @@ class EEGFM(nn.Module):
         self.metadata_encoder = MetadataEncoder(config)
         self.spatial_mixer = LightweightSpatialMixer(config)
         self.fast_backbone = FastCausalMamba(config)
-        if not config.fast_only:
+
+        if config.use_slow_stream or config.use_memory_context:
             self.memory_writer = MemoryWriter(config)
+        if config.use_slow_stream:
             self.slow_backbone = SlowCausalSSM(config)
+        if config.use_memory_context:
             self.memory_context = MemoryContext(config)
+
         self.readout = SplicedReadout(config)
         self.future_latent_predictor = FutureTokenPredictor(config)
 
@@ -157,7 +161,7 @@ class EEGFM(nn.Module):
         slot_index: torch.Tensor,
     ) -> torch.Tensor:
         batch_size, num_steps = fast_states.shape[:2]
-        if memory_tokens is None:
+        if memory_tokens is None or not self.config.use_slow_stream:
             return torch.zeros(
                 batch_size,
                 num_steps,
@@ -199,15 +203,18 @@ class EEGFM(nn.Module):
         _, num_steps, _, _ = chunks.shape
         device = chunks.device
         fast_states = self._encode_fast_sequence(chunks, metadata)
-        if self.config.fast_only:
+
+        if not (self.config.use_slow_stream or self.config.use_memory_context):
             return fast_states
+            
         memory_tokens = self._write_memory(fast_states)
         slot_index = self._memory_slot_index(num_steps, device)
         slow_states = self._scan_slow_sequence(fast_states, memory_tokens, slot_index)
-        slow_states = self._add_memory_context(
-            fast_states,
-            slow_states,
-            memory_tokens,
-            slot_index,
-        )
+        if self.config.use_memory_context:
+            slow_states = self._add_memory_context(
+                fast_states,
+                slow_states,
+                memory_tokens,
+                slot_index,
+            )
         return self.readout(fast_states, slow_states)
