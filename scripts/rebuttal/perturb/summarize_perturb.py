@@ -4,7 +4,10 @@ Reads <in_dir>/fold*.npz written by perturb_chbmit.py. Each subject is a test su
 fold, so intervals come from resampling subjects with replacement (all their windows together).
 
 Columns, all on the target unit (9:30-10:00), "bb" = backbone path:
+  p_orig     mean seizure probability of the target before the perturbation, in %
   dp_abs     mean |p_pert - p_orig| in percentage points
+  rel_abs    mean |p_pert - p_orig| / p_orig, in % (relative change of the probability)
+  rel_signed mean (p_pert - p_orig) / p_orig, in %
   dp_signed  mean (p_pert - p_orig) in percentage points (test B: does a planted seizure raise it?)
   dlo_abs    mean |log-odds change|
   share      dlo_abs / mean |log-odds change| when all history is removed (reset)
@@ -52,6 +55,7 @@ def main():
     ap.add_argument('--path', choices=['bb', 'total'], default='bb')
     ap.add_argument('--stratum', choices=['all', 'other', 'preictal', 'seizure'], default='all')
     ap.add_argument('--csv', default=None)
+    ap.add_argument('--compact', action='store_true', help='probability-scale columns only')
     args = ap.parse_args()
 
     d = load(args.in_dir)
@@ -79,7 +83,11 @@ def main():
                 dlo_reset = np.abs(d['lo_reset'][m] - d['lo_orig'][m])
                 lo_ci = boot_ci(dlo, sub)
                 dp_ci = boot_ci(np.abs(dp), sub)
+                rel = 100 * (p1[m] - p0[m]) / p0[m]
+                rel_reset = 100 * np.abs(sigmoid(d['lo_reset'][m]) - p0[m]) / p0[m]
                 rows.append(dict(
+                    p_orig=100 * p0[m].mean(), rel_abs=np.abs(rel).mean(), rel_signed=rel.mean(),
+                    rel_reset=rel_reset.mean(), dp_reset=100 * np.abs(sigmoid(d['lo_reset'][m]) - p0[m]).mean(),
                     test=test, dur=int(dur), lag=int(lag), n=int(m.sum()), subjects=len(np.unique(sub)),
                     dp_abs=np.abs(dp).mean(), dp_abs_lo=dp_ci[0], dp_abs_hi=dp_ci[1],
                     dp_signed=dp.mean(), dlo_abs=dlo.mean(), dlo_lo=lo_ci[0], dlo_hi=lo_ci[1],
@@ -91,6 +99,18 @@ def main():
 
     print(f"path={args.path} stratum={args.stratum} folds={sorted(thr)} "
           f"windows={len(np.unique(d['fold'] * 100000 + d['window']))}")
+    if args.compact:
+        print(f"{'test':<5}{'dur':>4}{'lag':>5}{'n':>6}{'subj':>5}{'p_orig%':>9}{'|dp| pp':>9}"
+              f"{'rel|dp|%':>10}{'rel dp%':>9}{'flips%':>8}{'d_fast%':>9}{'d_slow%':>9}")
+        for test in ('A', 'B'):
+            first = next(r for r in rows if r['test'] == test)
+            print(f"{test:<5}{'all history removed (reset)':>29}{first['p_orig']:>9.2f}{first['dp_reset']:>9.3f}"
+                  f"{first['rel_reset']:>10.2f}")
+            for r in (r for r in rows if r['test'] == test):
+                print(f"{r['test']:<5}{r['dur']:>4}{r['lag']:>5}{r['n']:>6}{r['subjects']:>5}{r['p_orig']:>9.2f}"
+                      f"{r['dp_abs']:>9.3f}{r['rel_abs']:>10.2f}{r['rel_signed']:>9.2f}{100 * r['flips']:>8.2f}"
+                      f"{100 * r['d_fast']:>9.2f}{100 * r['d_slow_all']:>9.2f}")
+        return
     hdr = (f"{'test':<4}{'dur':>4}{'lag':>5}{'n':>6}{'subj':>5}  {'|dp| pp [95% CI]':<22}{'dp pp':>7}"
            f"{'|dlo| [95% CI]':>24}{'share':>7}{'flips':>7}{'repeat':>9}{'d_fast':>8}{'d_slow':>8}{'d_emb':>8}")
     print(hdr)
