@@ -24,7 +24,7 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import numpy as np

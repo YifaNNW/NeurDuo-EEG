@@ -1,9 +1,9 @@
-"""CPU tests for perturb_lib. Run: python scripts/rebuttal/test_perturb_lib.py"""
+"""CPU tests for perturb_lib. Run: python scripts/rebuttal/perturb/test_perturb_lib.py"""
 
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import numpy as np
