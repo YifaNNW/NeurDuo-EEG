@@ -53,6 +53,9 @@ def main():
     ap.add_argument('--context_len', type=int, default=None)
     ap.add_argument('--cont_normalize', choices=['window', 'sequence'], default=None)
     ap.add_argument('--grad_accum', type=int, default=1)
+    ap.add_argument('--sched_stretch', type=int, default=1,
+                    help='stretch warm-up and cosine k times beyond the training length; 4 gives '
+                         'the learning-rate curve of the paper\'s CHB-MIT runs (see trainer.py)')
     ap.add_argument('--tag', default='', help='suffix for the result filename')
     ap.add_argument('--resume', action='store_true')
     ap.add_argument('--keep_ckpt', action='store_true',
@@ -109,6 +112,7 @@ def main():
         cont_normalize=args.cont_normalize or ds.get('cont_normalize', 'window'),
         seq_select_key=ds.get('seq_select_key', 'kappa'),
         grad_accum=args.grad_accum if seq else 1,
+        sched_stretch=args.sched_stretch,
     )
 
     if seq:
@@ -142,6 +146,7 @@ def main():
                pretrained=not args.no_pretrained, readout_budget=ds['readout_budget'],
                warmup_epochs=args.warmup_epochs, epochs=epochs, batch_size=bs,
                windows_per_batch=loader_bs, grad_accum=params.grad_accum,
+               sched_stretch=args.sched_stretch,
                n_params_backbone=int(n_bb), n_params_head=int(n_all - n_bb))
     if seq:
         res.update(context_len=params.context_len,

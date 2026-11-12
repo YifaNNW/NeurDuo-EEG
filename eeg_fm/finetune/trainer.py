@@ -54,8 +54,13 @@ class Trainer(object):
 
         self.grad_accum = max(1, int(getattr(params, 'grad_accum', 1)))
         steps = math.ceil(len(data_loader['train']) / self.grad_accum)
-        total_steps = params.epochs * steps
-        warmup_steps = warmup_epochs * steps
+        # sched_stretch k > 1 reproduces the schedule of the paper's CHB-MIT runs: the old loop counted
+        # micro-batches while stepping once per optimiser step, so with --grad_accum k the warm-up
+        # and the cosine were k times longer than the training (k = 4: warm-up until epoch 12 of 20,
+        # lr still 9.7e-5 at the end). 1 is the intended schedule.
+        stretch = max(1, int(getattr(params, 'sched_stretch', 1)))
+        total_steps = params.epochs * steps * stretch
+        warmup_steps = warmup_epochs * steps * stretch
         if warmup_steps > 0:
             assert warmup_epochs < params.epochs, \
                 (f"warmup_epochs {warmup_epochs} >= epochs {params.epochs}: "
@@ -69,8 +74,10 @@ class Trainer(object):
                         self.optimizer, T_max=total_steps - warmup_steps, eta_min=1e-6),
                 ],
                 milestones=[warmup_steps])
-            print(f"[trainer] warmup {warmup_epochs} epochs ({warmup_steps} steps), "
-                  f"then cosine over {total_steps - warmup_steps} steps", flush=True)
+            print(f"[trainer] warmup {warmup_epochs * stretch} epochs ({warmup_steps} steps), "
+                  f"then cosine over {total_steps - warmup_steps} steps"
+                  f"{f' (schedule stretched x{stretch}, training is {params.epochs * steps} steps)' if stretch > 1 else ''}",
+                  flush=True)
         else:
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 self.optimizer, T_max=total_steps, eta_min=1e-6)
